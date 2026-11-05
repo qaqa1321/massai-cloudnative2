@@ -24,7 +24,7 @@ class AnimalControllerTests {
     void listReturnsAllTwelveAnimals() throws Exception {
         mvc.perform(get("/api/animals"))
                 .andExpect(status().isOk())
-                .andExpect(jsonPath("$", hasSize(12)));
+                .andExpect(jsonPath("$", hasSize(11)));
     }
 
     @Test

@@ -1,0 +1,46 @@
+# Lab C : Docker Hub에 올라간 이미지로 실행하는 구성
+#   이미지 이름 = <DOCKERHUB_USER>/massai-mara-park:<APP_VERSION>  (값은 .env에서 읽음)
+#   build: 항목이 없습니다. 이 파일은 "만들어진 이미지를 받아서 실행"만 합니다.
+services:
+  db:
+    image: postgres:16-alpine
+    environment:
+      POSTGRES_DB: massai
+      POSTGRES_USER: massai
+      POSTGRES_PASSWORD: massai-pw
+    volumes:
+      - db-data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U massai -d massai"]
+      interval: 3s
+      timeout: 3s
+      retries: 20
+    restart: unless-stopped
+
+  app:
+    image: ${DOCKERHUB_USER}/massai-mara-park:${APP_VERSION}
+    environment:
+      SPRING_DATASOURCE_URL: jdbc:postgresql://db:5432/massai
+      SPRING_DATASOURCE_USERNAME: massai
+      SPRING_DATASOURCE_PASSWORD: massai-pw
+      APP_TITLE: ${APP_TITLE}
+    expose:
+      - "8080"
+    depends_on:
+      db:
+        condition: service_healthy
+    mem_limit: 512m
+    restart: unless-stopped
+
+  lb:
+    image: haproxy:2.9-alpine
+    ports:
+      - "80:8080"
+    volumes:
+      - ./haproxy/haproxy.cfg:/usr/local/etc/haproxy/haproxy.cfg:ro
+    depends_on:
+      - app
+    restart: unless-stopped
+
+volumes:
+  db-data:
